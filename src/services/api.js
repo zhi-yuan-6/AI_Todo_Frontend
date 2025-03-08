@@ -10,8 +10,7 @@ import {
 
 // 创建 Axios 实例
 const api = axios.create({
-  // baseURL: 'http://localhost:8080', // 根据实际后端地址修改
-  baseURL: '${process.env.Vue_APP_API_URL}', // 根据实际后端地址修改
+  baseURL: 'http://localhost:8080', // 根据实际后端地址修改
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json'
