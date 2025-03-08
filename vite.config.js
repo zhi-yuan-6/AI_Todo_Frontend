@@ -12,7 +12,8 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    target: 'http://localhost:8080',
+    // target: 'http://localhost:8080',
+    target: '${process.env.Vue_APP_API_URL}',
     chageOrigin: true,
   },
   plugins: [
