@@ -29,5 +29,5 @@ coverage
 
 *.tsbuildinfo
 /dist
-.vscode
+/.vscode
 docker-compose.yml
