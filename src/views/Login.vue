@@ -73,25 +73,22 @@ const handleLogin = async () => {
         loading.value = true
 
         // 3. 调用登录接口
-        const response = await api.login({
+        const data = await api.login({
             identifier: loginForm.identifier,
             password: loginForm.password
         })
 
-        console.log(response)
+        console.log(data)
 
-        // 4. 保存认证信息
-        authStore.login({
-            token: response.token,
-            user: response.user
-        })
+        // 4. 保存认证信息 - 修改这里，直接传递整个 data 
+        authStore.login(data)
 
-        // 5. 跳转到任务页
-        router.push('/tasks')
+        // 5. 成功提示（注：不需要手动跳转，authStore.login 已包含跳转逻辑）
         ElMessage.success('登录成功')
 
     } catch (error) {
         // 错误处理
+        console.error('登录失败', error)
         const errorMsg = error.response?.data?.error || '登录失败，请检查账号密码'
         ElMessage.error(errorMsg)
     } finally {

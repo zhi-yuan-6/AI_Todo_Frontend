@@ -12,7 +12,7 @@
         <!-- 任务表格 -->
         <el-table :data="tasks" v-loading="loading" style="width: 100%" stripe>
             <el-table-column prop="title" label="任务标题" width="200" />
-            <el-table-column prop="description" label="任务描述" />
+            <el-table-column prop="location" label="地点" width="150" />
             <el-table-column prop="status" label="状态" width="120">
                 <template #default="{ row }">
                     <el-tag :type="statusTagType(row.status)">
@@ -20,6 +20,8 @@
                     </el-tag>
                 </template>
             </el-table-column>
+            <el-table-column prop="category" label="分类" width="120" />
+            <el-table-column prop="description" label="任务描述" />
             <el-table-column prop="start_date" label="开始时间" width="180">
                 <template #default="{ row }">
                     {{ formatDate(row.start_date) }}
@@ -44,16 +46,29 @@
                 <el-form-item label="标题" prop="title">
                     <el-input v-model="currentTask.title" />
                 </el-form-item>
-                <el-form-item label="描述" prop="description">
-                    <el-input v-model="currentTask.description" type="textarea" :rows="3" />
+                <el-form-item label="地点" prop="location">
+                    <el-input v-model="currentTask.location" />
                 </el-form-item>
                 <el-form-item label="状态" prop="status">
                     <el-select v-model="currentTask.status">
                         <el-option label="待处理" value="pending" />
                         <el-option label="进行中" value="progress" />
                         <el-option label="已完成" value="completed" />
+                        <el-option label="失败" value="failed" />
                     </el-select>
                 </el-form-item>
+                <el-form-item label="分类" prop="category">
+                    <el-select v-model="currentTask.category">
+                        <el-option label="工作" value="工作" />
+                        <el-option label="学习" value="学习" />
+                        <el-option label="生活" value="生活" />
+                        <el-option label="健身" value="健身" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="描述" prop="description">
+                    <el-input v-model="currentTask.description" type="textarea" :rows="3" />
+                </el-form-item>
+
                 <el-form-item label="开始时间" prop="start_date">
                     <el-date-picker v-model="currentTask.start_date" type="datetime" placeholder="选择开始时间" />
                 </el-form-item>
@@ -87,10 +102,11 @@ const isEditing = ref(false)
 
 // 当前任务数据（用于新增/编辑）
 const currentTask = reactive({
-    id: null,
     title: '',
-    description: '',
+    category: '其他',
+    location: '',
     status: 'pending',
+    description: '',
     start_date: '',
     due_date: ''
 })
@@ -99,6 +115,11 @@ const currentTask = reactive({
 const formRules = reactive({
     title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
     start_date: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+    category: [{
+        required: true,
+        message: '请选择任务分类',
+        trigger: 'change'
+    }],
     due_date: [{
         required: true,
         validator: (rule, value, callback) => {
@@ -149,7 +170,15 @@ const handleEdit = (task) => {
 // 提交表单（新增/编辑）
 const submitForm = async () => {
     try {
-        const taskData = { ...currentTask }
+        const taskData = {
+            title: currentTask.title,
+            category: currentTask.category,
+            location: currentTask.location,
+            description: currentTask.description,
+            status: currentTask.status,
+            start_date: currentTask.start_date,
+            due_date: currentTask.due_date
+        }
 
         if (isEditing.value) {
             await api.updateTask(currentTask.id, taskData)
@@ -190,6 +219,8 @@ const resetForm = () => {
     Object.assign(currentTask, {
         id: null,
         title: '',
+        category: '其他',
+        location: '',
         description: '',
         status: 'pending',
         start_date: '',
@@ -202,9 +233,10 @@ const statusTagType = (status) => {
     const types = {
         pending: 'info',
         progress: 'warning',
-        completed: 'success'
+        completed: 'success',
+        failed: 'danger'
     }
-    return types[status] || ''
+    return types[status] || 'info' // // 默认返回 'info'，避免空值
 }
 
 // 状态显示文本
@@ -212,7 +244,8 @@ const statusText = (status) => {
     const texts = {
         pending: '待处理',
         progress: '进行中',
-        completed: '已完成'
+        completed: '已完成',
+        failed: '失败'
     }
     return texts[status] || status
 }

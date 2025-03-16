@@ -16,6 +16,13 @@
                     </el-icon>
                     <span>AI助手</span>
                 </router-link>
+                <!-- 新增数据分析导航路由 -->
+                <router-link to="/analytics" class="nav-item">
+                    <el-icon>
+                        <DataBoard />
+                    </el-icon>
+                    <span>数据分析</span>
+                </router-link>
             </nav>
         </div>
 
@@ -27,7 +34,7 @@
 </template>
 
 <script setup>
-import { List, ChatDotRound } from '@element-plus/icons-vue'
+import { List, ChatDotRound, DataBoard } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

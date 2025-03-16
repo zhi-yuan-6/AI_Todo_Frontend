@@ -2,29 +2,39 @@ import {
   fileURLToPath,
   URL
 } from 'node:url'
-
 import {
   defineConfig
 } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+import {
+  loadEnv
+} from 'vite'
 
-// https://vite.dev/config/
-export default defineConfig({
-  server: {
-    // target: 'http://localhost:8080',
-    target: `${process.env.Vue_APP_API_URL}`,
-    chageOrigin: true,
-  },
-  plugins: [
-    vue(),
-    // vueDevTools(),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src',
-        import.meta.url))
+export default defineConfig(({
+  mode
+}) => {
+  // 加载环境变量
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
+    server: {
+      target: `http://localhost:8080`,
+      changeOrigin: true,
     },
-  },
-  envPrefix: ['Vue_APP'],
+    plugins: [
+      vue(),
+      // vueDevTools(),
+    ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src',
+          import.meta.url))
+      },
+    },
+    envPrefix: ['Vue_APP'],
+    // 定义 process.env
+    define: {
+      'process.env': env
+    }
+  }
 })
