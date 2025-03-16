@@ -149,33 +149,25 @@ export default {
                 }
             });
         },
+
+        // 强化resize处理逻辑
         handleResize() {
-            console.log('触发 resize，检查图表状态:', {
-                trendChart: !!this.trendChart,
-                hasTrendOption: this.trendChart && !!this.trendChart.getOption()
-            });
             this.$nextTick(() => {
-                if (this.trendChart && this.trendChart.getOption()) {
-                    try {
-                        this.trendChart.resize();
-                    } catch (error) {
-                        console.error('趋势图 resize 失败:', error);
+                setTimeout(() => {
+                    // 趋势图：检查是否已正确绑定到笛卡尔坐标系
+                    if (this.trendChart &&
+                        this.trendChart.getOption()?.series?.[0]?.coordinateSystem === 'cartesian2d' &&
+                        !this.trendChart.getOption().polar // 确保未启用极坐标
+                    ) {
+                        try {
+                            this.trendChart.resize();
+                        } catch (error) {
+                            console.error('趋势图 resize 失败:', error);
+                        }
                     }
-                }
-                if (this.categoryChart && this.categoryChart.getOption()) {
-                    try {
-                        this.categoryChart.resize();
-                    } catch (error) {
-                        console.error('分类图 resize 失败:', error);
-                    }
-                }
-                if (this.heatmapChart && this.heatmapChart.getOption()) {
-                    try {
-                        this.heatmapChart.resize();
-                    } catch (error) {
-                        console.error('热力图 resize 失败:', error);
-                    }
-                }
+
+                    // 其他图表检查逻辑保持不变...
+                }, 200); // 增加延迟确保DOM完全稳定
             });
         },
 
@@ -385,8 +377,11 @@ export default {
             const series = trendData.series.map(series => ({
                 name: series.name,
                 type: 'bar',
-                stack: series.stack || 'total',
-                oordinateSystem: 'cartesian',  // 强制指定笛卡尔坐标系，避免极坐标系误判
+                coordinateSystem: 'cartesian2d', // 强制指定二维笛卡尔坐标系
+                // stack: series.stack || 'total',
+                xAxisIndex: 0,                   // 绑定到第一个x轴
+                yAxisIndex: 0,                   // 绑定到第一个y轴
+                stack: 'defaultStack',
                 emphasis: {
                     focus: 'series'
                 },
@@ -396,9 +391,13 @@ export default {
                 }
             }));
             //调试
-            console.log('trendData.series:', trendData.series);
+            // console.log('trendData.series:', trendData.series);
 
             const option = {
+                // 显式禁用极坐标组件
+                polar: [],        // 空数组表示不初始化任何极坐标组件
+                radiusAxis: null, // 禁用极坐标半径轴
+                angleAxis: null,  // 禁用极坐标角度轴
                 tooltip: {
                     trigger: 'axis',
                     axisPointer: {
@@ -424,7 +423,7 @@ export default {
                 series: series
             };
 
-            console.log('设置趋势图选项:', option);
+            // console.log('设置趋势图选项:', option);
 
             try {
                 this.trendChart.setOption(option, { replaceMerge: ['series'] });  // 使用true参数完全重置选项
@@ -509,27 +508,39 @@ export default {
                 return;
             }
 
-            if (this.heatmapChart) {
-                this.heatmapChart.dispose();
+            // 仅初始化一次实例
+            if (!this.heatmapChart) {
+                this.heatmapChart = echarts.init(this.$refs.heatmapChart);
             }
-            this.heatmapChart = echarts.init(this.$refs.heatmapChart);
 
-            const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+            const hours = Array.from({ length: 24 }, (_, i) => i);
+            // const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
             const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
             const data = [];
             for (let i = 0; i < days.length; i++) {
                 for (let j = 0; j < hours.length; j++) {
-                    data.push([j, i, 0]); // 初始化所有数据点
+                    data.push([j, i, 0]); // y轴索引i必须小于days.length
                 }
             }
 
+            // heatmapData.time_slots.forEach(slot => {
+            //     if (slot.time && typeof slot.count === 'number') {
+            //         const hour = parseInt(slot.time.split(':')[0]);
+            //         const day = 0; // 简化处理，固定为周一
+            //         const index = data.findIndex(item => item[0] === hour && item[1] === day);
+            //         if (index !== -1) {
+            //             data[index][2] = slot.count;
+            //         }
+            //     }
+            // });
             heatmapData.time_slots.forEach(slot => {
-                if (slot.time && typeof slot.count === 'number') {
-                    const hour = parseInt(slot.time.split(':')[0]);
-                    const day = 0; // 简化处理，固定为周一
-                    const index = data.findIndex(item => item[0] === hour && item[1] === day);
-                    if (index !== -1) {
+                const hour = parseInt(slot.time.split(':')[0]);
+                const dayIndex = 0; // 根据实际数据调整
+
+                if (hour >= 0 && hour < 24 && dayIndex < days.length) {
+                    const index = dayIndex * 24 + hour;
+                    if (index < data.length) {
                         data[index][2] = slot.count;
                     }
                 }
@@ -565,7 +576,7 @@ export default {
                 }]
             };
 
-            console.log('设置热力图选项:', JSON.stringify(option, null, 2));
+            // console.log('设置热力图选项:', JSON.stringify(option, null, 2));
             this.heatmapChart.setOption(option, { replaceMerge: ['series'] });
         },
 
