@@ -30,3 +30,4 @@ coverage
 *.tsbuildinfo
 /dist
 docker-compose.yml
+./src/components/formate.vue

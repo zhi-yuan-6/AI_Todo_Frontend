@@ -633,65 +633,178 @@ export default {
         formatAIReport(rawReport) {
             if (!rawReport) return '';
 
-            // 清理原始报告文本
-            let cleanReport = rawReport.replace(/^"(.*)"$/s, '$1').replace(/\\n/g, '\n');
+            // Clean the raw report text
+            const cleanReport = rawReport
+                .replace(/^"(.*)"$/s, '$1')
+                .replace(/\\n/g, '\n')
+                .trim();
 
-            // 转换为HTML
-            let formattedReport = cleanReport
-                .replace(/^# (.+?)(?:\n|$)/gm, '<h1 class="text-2xl font-bold mt-6 mb-4 text-blue-800">$1</h1>')
-                .replace(/^## (.+?)(?:\n|$)/gm, '<h2 class="text-xl font-bold mt-5 mb-3 text-blue-700">$1</h2>')
-                .replace(/^### (.+?)(?:\n|$)/gm, '<h3 class="text-lg font-semibold mt-4 mb-2 text-blue-600">$1</h3>')
-                .replace(/^#### (.+?)(?=\n|$)/gm, '<h4 class="text-base font-medium mt-3 mb-2 text-blue-500">$1</h4>')
-                // 处理水平分割线
-                .replace(/^-{3,}$/gm, '<hr class="my-6 border-t-2 border-blue-100">')
-                .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
-                .replace(/^\s*[-*]\s+(.+?)(?=\n|$)/gm, '\n<li class="ml-6 mb-2">$1</li>')
-                .replace(/^\s*(\d+)\.\s+(.+?)(?=\n|$)/gm, '\n<li class="ml-6 mb-2 list-decimal">$2</li>')
-                .replace(/(<li class="ml-6 mb-2 list-decimal">.*?<\/li>\n?)+/gs, '<ol class="list-decimal mb-4 pl-5">$&</ol>')
-                .replace(/(<li class="ml-6 mb-2">.*?<\/li>\n?)+/gs, '<ul class="list-disc mb-4 pl-5">$&</ul>')
-                .replace(/(?<=\n|^)(?!<[hou]|<li|\s*$)(.*?)(?=\n\n|\n<|$)/gs, '<p class="mb-3">$1</p>')
-                .replace(/!\[\]\((.*?)\)/g, '<div class="my-4 text-center"><img src="$1" alt="图表" class="mx-auto border rounded-lg shadow-sm" /></div>')
-                .replace(/\n{2,}/g, '\n\n')
-                .replace(/>\n+/g, '>')
-                .replace(/^(\s*)[-*]\s+(.+)$/gm, (match, indent, content) => {
-                    const padding = indent.length * 0.5; // 每级缩进0.5rem
-                    return `<li class="ml-${6 + padding} mb-2 pl-2">${content}</li>`;
-                })
+            // First do a pre-processing pass to identify list regions
+            let preprocessed = cleanReport;
 
-                .replace(/^(\s*)\d+\.\s+(.+)$/gm, (match, indent, content) => {
-                    const padding = indent.length * 0.5;
-                    return `<li class="ml-${6 + padding} mb-2 pl-2 list-decimal">${content}</li>`;
-                })
+            // Mark list regions with special tokens to process them as blocks later
+            preprocessed = preprocessed.replace(/(?:^|\n+)((?:[ \t]*(?:[-*]|\d+\.)[ \t]+.+\n?)+)/g, (match, listBlock) => {
+                return '\n\n__LIST_START__\n' + listBlock + '\n__LIST_END__\n\n';
+            });
 
-                .replace(/(\|.+\|)\n(\|[-: ]+)+\n((\|.*\|)+)/g, (match, header, divider, body) => {
-                    const align = divider.split('|').slice(1, -1).map(col =>
-                        col.includes(':') ? 'text-center' : 'text-left'
-                    )
-                })
-                .replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, src) =>
-                    `<div class="my-6 text-center">
-                <img src="${src}" alt="${alt || '图表'}" 
-                     class="mx-auto max-w-full rounded-lg border shadow-md">
-                ${alt ? `<p class="mt-2 text-sm text-gray-600">${alt}</p>` : ''}
-            </div>`
-                )
-                .replace(/(<li class="ml-6[^>]+>.*<\/li>)+/gs, match => {
-                    const isOrdered = match.includes('list-decimal');
-                    return `<${isOrdered ? 'ol' : 'ul'} class="mb-4 pl-5 ${isOrdered ? 'list-decimal' : 'list-disc'}">${match}</${isOrdered ? 'ol' : 'ul'}>`;
-                })
-                .replace(/(^|\n\n)([^\n<].+?)(?=\n\n|$)/gs, '\n<p class="mb-4 text-gray-700 leading-relaxed">$2</p>')
-                .replace(/\n{3,}/g, '\n\n');
+            // Define regex patterns and their HTML replacements
+            const markdownPatterns = [
+                // Headers
+                { pattern: /^###### (.+?)(?=\n|$)/gm, replacement: '<h6 class="text-sm font-medium mt-4 mb-2 text-blue-400">$1</h6>' },
+                { pattern: /^##### (.+?)(?=\n|$)/gm, replacement: '<h5 class="text-sm font-medium mt-4 mb-2 text-blue-400">$1</h5>' },
+                { pattern: /^#### (.+?)(?=\n|$)/gm, replacement: '<h4 class="text-base font-medium mt-4 mb-2 text-blue-500">$1</h4>' },
+                { pattern: /^### (.+?)(?=\n|$)/gm, replacement: '<h3 class="text-lg font-semibold mt-5 mb-3 text-blue-600">$1</h3>' },
+                { pattern: /^## (.+?)(?=\n|$)/gm, replacement: '<h2 class="text-xl font-bold mt-6 mb-4 text-blue-700">$1</h2>' },
+                { pattern: /^# (.+?)(?=\n|$)/gm, replacement: '<h1 class="text-2xl font-bold mt-8 mb-6 text-blue-800">$1</h1>' },
 
-            // 包装为最终HTML
-            formattedReport = `
-                <div class="ai-report p-4 bg-white rounded-lg shadow">
-                    <h2 class="text-2xl font-bold mb-4 text-center text-blue-800">AI数据分析报告</h2>
-                    ${formattedReport.trim()}
-                    <div class="text-right text-sm text-gray-500 mt-4">生成时间: ${new Date().toLocaleString()}</div>
-                </div>
-            `;
+                // Code blocks
+                { pattern: /```([^`]+)```/g, replacement: '<pre class="bg-gray-100 p-3 rounded overflow-x-auto my-4 text-sm font-mono">$1</pre>' },
 
-            return formattedReport;
+                // Formatting
+                { pattern: /\*\*(.*?)\*\*/g, replacement: '<strong class="font-bold">$1</strong>' },
+                { pattern: /\*(.*?)\*/g, replacement: '<em class="italic">$1</em>' },
+                { pattern: /`([^`]+)`/g, replacement: '<code class="bg-gray-100 px-1 rounded text-red-600 font-mono">$1</code>' },
+
+                // Horizontal rule
+                { pattern: /^-{3,}$/gm, replacement: '<hr class="my-6 border-t-2 border-blue-100">' },
+
+                // Links
+                { pattern: /\[(.*?)\]\((.*?)\)/g, replacement: '<a href="$2" class="text-blue-600 hover:underline">$1</a>' },
+
+                // Images
+                {
+                    pattern: /!\[(.*?)\]\((.*?)\)/g, replacement: (match, alt, src) =>
+                        `<figure class="my-6">
+                <img src="${src}" alt="${alt || '图表'}" class="mx-auto max-w-full h-auto rounded-lg border shadow-md" loading="lazy">
+                ${alt ? `<figcaption class="mt-2 text-center text-sm text-gray-600">${alt}</figcaption>` : ''}
+            </figure>`
+                },
+
+                // Footnotes
+                { pattern: /\[\^(\d+)\]:\s*(.*)/g, replacement: '<div class="text-sm text-gray-500 mt-2 border-t pt-1">[$1]: $2</div>' },
+
+                // Tables
+                {
+                    pattern: /(\|.+\|)\n(\|[-: ]+\|)+\n((?:\|.*\|\n?)+)/g, replacement: (match, header, divider, body) => {
+                        const alignments = divider.split('|').slice(1, -1).map(col => {
+                            if (col.trim().startsWith(':') && col.trim().endsWith(':')) return 'text-center';
+                            if (col.trim().endsWith(':')) return 'text-right';
+                            return 'text-left';
+                        });
+
+                        const headerCells = header.split('|').slice(1, -1).map((cell, i) =>
+                            `<th class="p-2 border bg-blue-50 font-semibold ${alignments[i]}">${cell.trim()}</th>`
+                        ).join('');
+
+                        const bodyRows = body.split('\n')
+                            .filter(row => row.trim() && row.includes('|'))
+                            .map((row, rowIndex) => {
+                                const cells = row.split('|').slice(1, -1).map((cell, i) =>
+                                    `<td class="p-2 border ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${alignments[i]}">${cell.trim()}</td>`
+                                ).join('');
+                                return `<tr>${cells}</tr>`;
+                            }).join('');
+
+                        return `<div class="overflow-x-auto my-6">
+                <table class="w-full border-collapse">
+                    <thead><tr>${headerCells}</tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                </table>
+            </div>`;
+                    }
+                },
+
+                // Emojis
+                { pattern: /:\)/g, replacement: '😊' },
+                { pattern: /:\(/g, replacement: '😢' },
+                { pattern: /:D/g, replacement: '😄' },
+                { pattern: /:p/g, replacement: '😛' },
+                { pattern: /:o/g, replacement: '😲' },
+
+                // HTML entities
+                { pattern: /&gt;/g, replacement: '>' },
+                { pattern: /&lt;/g, replacement: '<' },
+                { pattern: /&amp;/g, replacement: '&' },
+            ];
+
+            // Apply all patterns
+            let formattedReport = preprocessed;
+            markdownPatterns.forEach(({ pattern, replacement }) => {
+                formattedReport = formattedReport.replace(pattern, replacement);
+            });
+
+            // Process lists
+            formattedReport = formattedReport.replace(/__LIST_START__\n([\s\S]*?)\n__LIST_END__/g, (match, listContent) => {
+                // Determine if the list is ordered or unordered
+                const isOrdered = /^\s*\d+\./.test(listContent);
+
+                // Process list items
+                let processedItems = '';
+                let currentLevel = 0;
+                const lines = listContent.split('\n');
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // Determine the indentation level
+                    const indentMatch = lines[i].match(/^(\s*)/);
+                    const indent = indentMatch ? indentMatch[1].length : 0;
+                    const level = Math.floor(indent / 2);
+
+                    // Get the item content
+                    let itemContent = '';
+
+                    if (isOrdered) {
+                        const match = line.match(/^\s*(\d+)\.(.+)$/);
+                        if (match) {
+                            itemContent = match[2].trim();
+                        } else {
+                            itemContent = line;
+                        }
+                    } else {
+                        const match = line.match(/^\s*[-*](.+)$/);
+                        if (match) {
+                            itemContent = match[1].trim();
+                        } else {
+                            itemContent = line;
+                        }
+                    }
+
+                    // Create the list item
+                    processedItems += `<li class="mb-2 ${level > 0 ? `ml-${Math.min(level * 4, 16)}` : ''}">${itemContent}</li>`;
+                }
+
+                // Wrap in the appropriate list type
+                return `<${isOrdered ? 'ol' : 'ul'} class="my-4 pl-6 ${isOrdered ? 'list-decimal' : 'list-disc'}">${processedItems}</${isOrdered ? 'ol' : 'ul'}>`;
+            });
+
+            // Process paragraphs - must be done after lists to avoid conflicts
+            formattedReport = formattedReport.replace(/(?<!\n<(?:h[1-6]|ul|ol|li|div|table|pre|hr)[\s>])((?:(?!\n<(?:h[1-6]|ul|ol|li|div|table|pre|hr)[\s>]).)+)(?:\n{2,}|$)/gs, (match, content) => {
+                if (content.trim()) {
+                    return `<p class="mb-4 leading-relaxed">${content.trim()}</p>`;
+                }
+                return '';
+            });
+
+            // Remove unnecessary whitespace and normalize line endings
+            formattedReport = formattedReport
+                .replace(/\n{3,}/g, '\n\n')
+                .replace(/<p>\s*<\/p>/g, '')
+                .replace(/\s+</g, '<')
+                .replace(/>\s+/g, '>')
+                .trim();
+
+            // Wrap in final container with metadata
+            return `
+        <div class="ai-report p-6 bg-white rounded-lg shadow-lg max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-800 border-b pb-4">AI数据分析报告</h2>
+            ${formattedReport}
+            <div class="text-right text-sm text-gray-500 mt-8 pt-4 border-t">
+                生成时间: ${new Date().toLocaleString('zh-CN', { hour12: false })}
+            </div>
+        </div>
+    `;
         },
 
         /**
