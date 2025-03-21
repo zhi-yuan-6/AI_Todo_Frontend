@@ -27,10 +27,6 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('accessToken', payload.token_pair.access_token);
       localStorage.setItem('refreshToken', payload.token_pair.refresh_token);
       localStorage.setItem('user', JSON.stringify(payload.user));
-
-      // 登录后跳转到任务列表页
-      const router = useRouter()
-      router.push('/tasks')
     },
 
     /**
