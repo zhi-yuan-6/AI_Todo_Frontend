@@ -231,12 +231,12 @@ const resetForm = () => {
 // 状态标签样式
 const statusTagType = (status) => {
     const types = {
-        pending: 'info',
-        progress: 'warning',
-        completed: 'success',
-        failed: 'danger'
+        pending: 'info',    // 将 "pending" 映射到 "info"
+        progress: 'warning',// 将 "progress" 映射到 "warning"
+        completed: 'success',// 将 "completed" 映射到 "success"
+        failed: 'danger'    // 将 "failed" 映射到 "danger"
     }
-    return types[status] || 'info' // // 默认返回 'info'，避免空值
+    return types[status] || 'info' // 默认返回 'info'
 }
 
 // 状态显示文本
