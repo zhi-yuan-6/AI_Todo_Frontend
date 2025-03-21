@@ -42,7 +42,10 @@ const routes = [
       {
         path: '/assistant',
         name: 'Assistant',
-        component: () => import('@/components/AIChat.vue')
+        component: () => import('@/components/AIChat.vue'),
+        meta: {
+          keepAlive: true
+        }
       },
       {
         path: '/analytics',

@@ -7,6 +7,7 @@
                     <!-- AI消息 -->
                     <div v-if="message.type === 'ai'" class="ai-message">
                         <el-avatar class="avatar" :size="32" :icon="UserFilled" />
+
                         <div class="bubble">
                             <div class="content">{{ message.content }}</div>
                             <div class="timestamp">{{ formatTime(message.timestamp) }}</div>
@@ -19,7 +20,7 @@
                             <div class="content">{{ message.content }}</div>
                             <div class="timestamp">{{ formatTime(message.timestamp) }}</div>
                         </div>
-                        <el-avatar class="avatar" :size="32" :src="userAvatar" />
+                        <el-avatar class="avatar" :size="32" />
                     </div>
                 </div>
 
@@ -47,29 +48,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick, computed } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled, Loading, Promotion } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import { useChatStore } from '@/stores/chat'
 
 const authStore = useAuthStore()
+const chatStore = useChatStore()
 const messagesContainer = ref(null)
 const inputMessage = ref('')
-const loading = ref(false)
 
-// 聊天消息数据
-const messages = reactive([
-    {
-        type: 'ai',
-        content: '你好！我是AI任务助手，你可以告诉我你的需求，我会帮助你处理任务。',
-        timestamp: Date.now()
-    }
-])
-
-// 用户头像（根据实际用户数据调整）
-const userAvatar = computed(() => authStore.user?.avatar || '')
+// 使用 store 中的数据
+const messages = computed(() => chatStore.messages)
+const loading = computed(() => chatStore.loading)
 
 // 发送消息
 const handleSend = async () => {
@@ -77,7 +71,7 @@ const handleSend = async () => {
 
     try {
         // 添加用户消息
-        messages.push({
+        chatStore.addMessage({
             type: 'user',
             content: inputMessage.value.trim(),
             timestamp: Date.now()
@@ -85,7 +79,7 @@ const handleSend = async () => {
 
         const userInput = inputMessage.value
         inputMessage.value = ''
-        loading.value = true
+        chatStore.setLoading(true)
 
         // 滚动到底部
         await nextTick()
@@ -95,7 +89,7 @@ const handleSend = async () => {
         const response = await api.aiAssist(userInput)
 
         // 添加AI回复
-        messages.push({
+        chatStore.addMessage({
             type: 'ai',
             content: response.data || '暂时无法处理你的请求',
             timestamp: Date.now()
@@ -104,7 +98,7 @@ const handleSend = async () => {
     } catch (error) {
         ElMessage.error('AI处理失败，请稍后重试')
     } finally {
-        loading.value = false
+        chatStore.setLoading(false)
         await nextTick()
         scrollToBottom()
     }
@@ -121,6 +115,12 @@ const scrollToBottom = () => {
 // 时间格式化
 const formatTime = (timestamp) => {
     return dayjs(timestamp).format('HH:mm')
+}
+</script>
+
+<script>
+export default {
+    name: 'AIChat',
 }
 </script>
 

@@ -94,8 +94,9 @@
                             <span>AI正在生成中...</span>
                         </div>
                     </div>
-                    <div v-else-if="aiReport" class="ai-report-rendered" v-html="formatAIReport(aiReport)"
-                        style="white-space: pre-wrap">
+                    <!-- 修改显示逻辑 -->
+                    <div v-else-if="tempReport || aiReport" class="ai-report-rendered"
+                        v-html="formatAIReport(tempReport || aiReport)" style="white-space: pre-wrap">
                     </div>
                     <div v-else class="ai-placeholder">
                         <p>点击上方按钮生成分析报告</p>
@@ -108,12 +109,19 @@
 
 <script>
 import * as echarts from 'echarts';
-import { ElMessage } from 'element-plus';
+import { ElMessage, parseDate } from 'element-plus';
 import api from '@/services/api';
+// 新增导入
+import { useAnalyticsStore } from '@/stores/analytics'
+import { storeToRefs } from 'pinia'
 
 export default {
     name: 'Analytics',
     data() {
+        //初始化store
+        const analyticsStore = useAnalyticsStore()
+        //解构需要相应的store属性
+        const { aiReport, lastQueryParams } = storeToRefs(analyticsStore)
         return {
             timeRange: {
                 start: null,
@@ -123,7 +131,7 @@ export default {
             trendChart: null,
             categoryChart: null,
             heatmapChart: null,
-            aiReport: '',
+            // aiReport: '',
             aiReportLoading: false,
             resizeHandler: null,
             analyticsData: null,
@@ -131,6 +139,11 @@ export default {
             lastTrendData: null,
             lastCategoryData: null,
             lastHeatmapData: null,
+
+            analyticsStore,
+            aiReport,
+            lastQueryParams,
+            tempReport: '',
         };
     },
     mounted() {
@@ -148,6 +161,9 @@ export default {
             this.initCharts(); // 初始化图表
             this.fetchData();  // 加载数据
         });
+        if (this.lastQueryParams) {
+            this.timeRange = { ...this.lastQueryParams }
+        }
     },
     methods: {
         /** 
@@ -888,6 +904,7 @@ export default {
                                             }
                                         });
                                     }
+                                    this.tempReport += parsedData.choices[0].delta.content
                                 } catch (error) {
                                     console.error('解析 JSON 失败:', error);
                                 }
@@ -896,13 +913,16 @@ export default {
                         }
                     }
                 }
-
+                this.analyticsStore.saveReport(
+                    this.tempReport,
+                    { ...this.timeRange }
+                )
 
             } catch (error) {
                 console.error('生成AI报告失败:', error);
                 ElMessage.error(`生成AI报告失败: ${error.message}`);
                 this.aiReportLoading = false;
-
+                this.tempReport = ''
                 // 降级到本地生成报告
                 setTimeout(() => {
                     this.aiReport = this.generateLocalAIReport();
@@ -912,7 +932,7 @@ export default {
 
 
         // 添加一个新方法来生成本地AI报告
-        generateLocalAIReport() {
+        generateLocalAIReport(rawReport) {
             // 基于当前已有的analyticsData数据生成一个简单的报告
             const data = this.analyticsData;
             let reportContent = `
@@ -977,7 +997,8 @@ export default {
             </ul>
         `;
 
-            return reportContent;
+            // return reportContent;
+            return this._originalFormatMethod(this.tempReport || rawReport)
         },
 
     },
