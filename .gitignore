@@ -31,3 +31,4 @@ coverage
 /dist
 docker-compose.yml
 ./src/components/formate.vue
+./src/components/aichat1.0.vue
