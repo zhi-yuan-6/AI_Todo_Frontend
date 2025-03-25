@@ -7,9 +7,6 @@ import Login from '@/views/Login.vue'
 import {
   useAuthStore
 } from '@/stores/auth.js'
-import {
-  name
-} from '@vue/eslint-config-prettier/skip-formatting'
 
 const routes = [
   // 登录/注册页（无侧边栏）
@@ -55,7 +52,7 @@ const routes = [
       // 默认重定向到任务页
       {
         path: '',
-        redirect: '/tasks'
+        redirect: '/assistant'
       }
     ]
   }

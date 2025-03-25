@@ -86,7 +86,7 @@ const handleLogin = async () => {
         // 5. 成功提示（注：不需要手动跳转，authStore.login 已包含跳转逻辑）
         ElMessage.success('登录成功')
         // 5. 成功提示并跳转到任务列表页
-        router.push('/tasks'); // 在组件中处理跳转
+        router.push('/assistant'); // 在组件中处理跳转
 
     } catch (error) {
         // 错误处理

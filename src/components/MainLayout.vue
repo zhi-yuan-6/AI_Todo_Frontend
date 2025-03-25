@@ -53,8 +53,8 @@ const isCollapsed = ref(false)
 
 // 导航项配置
 const navItems = [
-    { path: '/tasks', name: '任务管理', icon: List },
     { path: '/assistant', name: 'AI助手', icon: ChatDotRound },
+    { path: '/tasks', name: '任务管理', icon: List },
     { path: '/analytics', name: '数据分析', icon: DataBoard }
 ]
 
