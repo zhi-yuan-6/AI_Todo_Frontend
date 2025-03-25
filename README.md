@@ -8,10 +8,10 @@ AI Todo Frontend 是一个基于现代前端技术栈开发的项目，旨在为
 
 在开始之前，请确保您的系统已安装以下工具：
 
-- [Node.js](https://nodejs.org/)（建议版本 20.x 或更高）
-- [npm](https://www.npmjs.com/)（通常随 Node.js 一起安装）
-- [Docker](https://www.docker.com/)（如果您选择使用 Docker 部署）
-- [Git](https://git-scm.com/)（用于克隆项目代码）
+- [Node.js](https://nodejs.org/ )（建议版本 20.x 或更高）
+- [npm](https://www.npmjs.com/ )（通常随 Node.js 一起安装）
+- [Docker](https://www.docker.com/ )（如果您选择使用 Docker 部署）
+- [Git](https://git-scm.com/ )（用于克隆项目代码）
 
 ## 安装和运行
 
@@ -26,6 +26,8 @@ AI Todo Frontend 是一个基于现代前端技术栈开发的项目，旨在为
    ```bash
    git clone https://github.com/zhi-yuan-6/AI_Todo_Frontend.git
    ```
+
+   或者，您也可以直接下载项目的zip文件：[点击此处下载zip文件](https://github.com/zhi-yuan-6/AI_Todo_Frontend/archive/refs/heads/main.zip)
 
 2. **进入项目目录**
 
@@ -54,13 +56,13 @@ AI Todo Frontend 是一个基于现代前端技术栈开发的项目，旨在为
 1. **拉取 Docker 镜像**
 
    ```bash
-   docker pull zhhiyuan/aitodofront:latest
+   docker pull zhhiyuan/aitodofrontend:latest
    ```
 
 2. **运行 Docker 容器**
 
    ```bash
-   docker run -d -p 5173:80 zhhiyuan/aitodofront
+   docker run -d -p 5173:80 zhhiyuan/aitodofrontend:latest
    ```
 
    容器将在后台运行，并将内部的 80 端口映射到主机的 5173 端口。完成后，您可以通过浏览器访问 `http://localhost:5173` 查看应用。
