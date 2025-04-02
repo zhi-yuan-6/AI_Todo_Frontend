@@ -43,61 +43,50 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+let isRefreshing = false;
+
 // 响应拦截器
 api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     if (error.response) {
-      const {
-        status,
-        data
-      } = error.response;
+      const { status, data } = error.response;
 
       // 401 未授权处理
       if (status === 401) {
         const refreshToken = localStorage.getItem('refreshToken');
         const originalRequest = error.config;
 
-        if (refreshToken && !originalRequest._retry) {
+        if (refreshToken && !originalRequest._retry && !isRefreshing) {
           originalRequest._retry = true;
+          isRefreshing = true;
 
           try {
-            // 直接使用 axios 调用刷新接口
             const response = await api.post('/auth/refresh', {
               refresh_token: refreshToken,
             });
 
-            const newTokens = response.data.token_pair;
+            const { access_token, refresh_token } = response.data; // 确保字段名正确
+            localStorage.setItem('accessToken', access_token);
+            localStorage.setItem('refreshToken', refresh_token);
 
-            // 更新本地存储的令牌
-            localStorage.setItem('accessToken', newTokens.access_token);
-            localStorage.setItem('refreshToken', newTokens.refresh_token);
-
-            // 更新当前请求的令牌
-            originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
-
-            // 重试原始请求
+            originalRequest.headers.Authorization = `Bearer ${access_token}`;
             return api(originalRequest);
           } catch (refreshError) {
-            console.log('Token refresh failed:', refreshError);
-
-            // 清除本地存储的令牌
+            isRefreshing = false;
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
-
-            // 跳转到登录页
             router.push('/login');
             ElMessage.warning('登录已过期，请重新登录');
             return Promise.reject(refreshError);
+          } finally {
+            isRefreshing = false;
           }
         } else {
-          // 清除本地存储的令牌
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
-
-          // 跳转到登录页
           router.push('/login');
           ElMessage.warning('登录已过期，请重新登录');
         }
