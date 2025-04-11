@@ -91,6 +91,13 @@ api.interceptors.response.use(
           ElMessage.warning('登录已过期，请重新登录');
         }
       }
+      // 403 权限不足处理
+      else if (status === 403) {
+        ElMessage.error('您没有权限执行此操作');
+        if (router.currentRoute.value.path.startsWith('/admin')) {
+          router.push('/');
+        }
+      }
       // 其他错误提示
       else if (data && data.error) {
         ElMessage.error(data.error);
@@ -113,7 +120,7 @@ api.interceptors.response.use(
   }
 );
 
-// API 方法封装（保持不变）
+// API 方法封装
 export default {
   // 用户相关
   login: (credentials) => api.post('/user/login', credentials),
@@ -135,6 +142,7 @@ export default {
   aiAssist: (input) => api.post('/ai/assist', {
     input
   }),
+  
   // 数据分析相关
   analytics: {
     // 获取合并数据
@@ -143,9 +151,23 @@ export default {
         params
       });
     },
-    // 生成AI分析报告（暂时注释，等待后端实现）
+    // 生成AI分析报告
     generateAIReport(params) {
       return api.post('/analytics/ai_report', params);
     }
+  },
+  
+  // 管理员 AI 模型管理
+  admin: {
+    // 获取所有AI模型
+    getAllModels: () => api.get('/admin/models'),
+    // 创建新AI模型
+    createModel: (model) => api.post('/admin/models', model),
+    // 更新AI模型
+    updateModel: (id, model) => api.put(`/admin/models/${id}`, model),
+    // 删除AI模型
+    deleteModel: (id) => api.delete(`/admin/models/${id}`),
+    // 设置默认AI模型
+    setDefaultModel: (id) => api.post(`/admin/models/${id}/default`)
   }
 };

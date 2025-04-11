@@ -5,6 +5,9 @@ import {
 import {
   useRouter
 } from 'vue-router'
+import { ref, computed } from 'vue'
+import router from '@/router'
+import api from '@/services/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -61,6 +64,11 @@ export const useAuthStore = defineStore('auth', {
     /**
      * 获取当前用户ID
      */
-    currentUserId: (state) => state.user.id || null
+    currentUserId: (state) => state.user.id || null,
+    
+    /**
+     * 判断用户是否为管理员
+     */
+    isAdmin: (state) => state.user?.permissions === 1
   }
 });
